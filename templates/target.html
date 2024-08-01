@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Target Device</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .container {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Target Device</h1>
+        <div id="status" class="mt-3"></div>
+        <button id="grant_permission" class="btn btn-primary mt-3" style="display: none;">Grant Permission</button>
+    </div>
+
+    <script>
+        const socket = io.connect(window.location.origin, { query: { type: 'target' } });
+
+        let screenStream, audioStream;
+
+        socket.on('status', data => {
+            document.getElementById('status').innerText = data.message;
+        });
+
+        socket.on('permission_request', data => {
+            document.getElementById('grant_permission').style.display = 'block';
+            document.getElementById('status').innerText = data.message;
+        });
+
+        document.getElementById('grant_permission').onclick = async () => {
+            try {
+                screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+
+                // Create a stream URL for demonstration purposes
+                socket.emit('permission_granted', {
+                    screen: URL.createObjectURL(screenStream),
+                    audio: URL.createObjectURL(audioStream),
+                    video: URL.createObjectURL(videoStream)
+                });
+            } catch (error) {
+                console.error('Error accessing media devices.', error);
+            }
+        };
+
+        socket.on('start_screen_share', async () => {
+            if (!screenStream) {
+                screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            }
+            socket.emit('send_screen', {
+                screen: URL.createObjectURL(screenStream)
+            });
+        });
+
+        socket.on('stop_screen_share', () => {
+            if (screenStream) {
+                screenStream.getTracks().forEach(track => track.stop());
+                screenStream = null;
+            }
+        });
+
+        socket.on('start_audio_share', async () => {
+            if (!audioStream) {
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            }
+            socket.emit('send_audio', {
+                audio: URL.createObjectURL(audioStream)
+            });
+        });
+
+        socket.on('stop_audio_share', () => {
+            if (audioStream) {
+                audioStream.getTracks().forEach(track => track.stop());
+                audioStream = null;
+            }
+        });
+
+        socket.on('take_picture', async () => {
+            try {
+                const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.createElement('video');
+                video.srcObject = videoStream;
+                video.play();
+
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                const context = canvas.getContext('2d');
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                const picture = canvas.toDataURL('image/png');
+                socket.emit('send_picture', { picture });
+
+                videoStream.getTracks().forEach(track => track.stop());
+            } catch (error) {
+                console.error('Error taking picture.', error);
+            }
+        });
+
+        socket.on('start_video', async () => {
+            try {
+                const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                socket.emit('send_video', {
+                    video: URL.createObjectURL(videoStream)
+                });
+            } catch (error) {
+                console.error('Error accessing video.', error);
+            }
+        });
+
+        socket.on('play_sound', async () => {
+            try {
+                const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const audio = new Audio();
+                audio.srcObject = audioStream;
+                audio.play();
+            } catch (error) {
+                console.error('Error playing sound.', error);
+            }
+        });
+    </script>
+</body>
+</html>

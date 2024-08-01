@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        #monitoring {
+            margin-top: 20px;
+        }
+        #screen_container, #audio_container, #picture_container, #video_container {
+            margin-top: 20px;
+        }
+        h3 {
+            margin-top: 20px;
+        }
+        .control-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5 text-center">User Dashboard</h1>
+        <div class="text-center">
+            <button id="request_permission" class="btn btn-primary mt-3">Request Permission</button>
+        </div>
+        <div id="status" class="mt-3 text-center"></div>
+        <div id="monitoring" class="mt-4" style="display: none;">
+            <h2 class="text-center">Monitoring</h2>
+            <div class="control-buttons">
+                <button id="start_screen_share" class="btn btn-success">Start Screen Share</button>
+                <button id="stop_screen_share" class="btn btn-danger" style="display: none;">Stop Screen Share</button>
+                <button id="start_audio_share" class="btn btn-success">Start Audio Share</button>
+                <button id="stop_audio_share" class="btn btn-danger" style="display: none;">Stop Audio Share</button>
+                <button id="take_picture" class="btn btn-info">Take Picture</button>
+                <button id="start_video" class="btn btn-info">Start Video</button>
+                <button id="play_sound" class="btn btn-warning">Play Sound</button>
+            </div>
+            <div id="screen_container" class="mt-4">
+                <h3>Screen</h3>
+                <iframe id="screen" class="w-100 border border-secondary rounded" style="height: 400px;"></iframe>
+            </div>
+            <div id="audio_container" class="mt-4">
+                <h3>Audio</h3>
+                <audio id="audio" controls class="w-100 border border-secondary rounded"></audio>
+            </div>
+            <div id="picture_container" class="mt-4">
+                <h3>Picture</h3>
+                <img id="picture" class="w-100 border border-secondary rounded" style="height: auto;" />
+            </div>
+            <div id="video_container" class="mt-4">
+                <h3>Video</h3>
+                <video id="video" controls class="w-100 border border-secondary rounded" style="height: 400px;"></video>
+            </div>
+            <div id="sound_container" class="mt-4">
+                <h3>Sound</h3>
+                <audio id="live_audio" controls class="w-100 border border-secondary rounded"></audio>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io.connect(window.location.origin, { query: { type: 'user' } });
+
+        document.getElementById('request_permission').onclick = () => {
+            socket.emit('request_permission', { message: 'Requesting permission to access mic, screen, and camera' });
+        };
+
+        document.getElementById('start_screen_share').onclick = () => {
+            socket.emit('start_screen_share', { message: 'Start screen share' });
+            document.getElementById('start_screen_share').style.display = 'none';
+            document.getElementById('stop_screen_share').style.display = 'block';
+        };
+
+        document.getElementById('stop_screen_share').onclick = () => {
+            socket.emit('stop_screen_share', { message: 'Stop screen share' });
+            document.getElementById('start_screen_share').style.display = 'block';
+            document.getElementById('stop_screen_share').style.display = 'none';
+        };
+
+        document.getElementById('start_audio_share').onclick = () => {
+            socket.emit('start_audio_share', { message: 'Start audio share' });
+            document.getElementById('start_audio_share').style.display = 'none';
+            document.getElementById('stop_audio_share').style.display = 'block';
+        };
+
+        document.getElementById('stop_audio_share').onclick = () => {
+            socket.emit('stop_audio_share', { message: 'Stop audio share' });
+            document.getElementById('start_audio_share').style.display = 'block';
+            document.getElementById('stop_audio_share').style.display = 'none';
+        };
+
+        document.getElementById('take_picture').onclick = () => {
+            socket.emit('take_picture', { message: 'Take picture' });
+        };
+
+        document.getElementById('start_video').onclick = () => {
+            socket.emit('start_video', { message: 'Start video' });
+        };
+
+        document.getElementById('play_sound').onclick = () => {
+            socket.emit('play_sound', { message: 'Play sound' });
+        };
+
+        socket.on('status', data => {
+            document.getElementById('status').innerText = data.message;
+        });
+
+        socket.on('start_monitoring', data => {
+            document.getElementById('monitoring').style.display = 'block';
+        });
+
+        socket.on('receive_screen', data => {
+            document.getElementById('screen').src = data.screen;
+        });
+
+        socket.on('receive_audio', data => {
+            document.getElementById('audio').src = data.audio;
+        });
+
+        socket.on('receive_picture', data => {
+            document.getElementById('picture').src = data.picture;
+        });
+
+        socket.on('receive_video', data => {
+            document.getElementById('video').src = data.video;
+        });
+
+        socket.on('receive_sound', data => {
+            document.getElementById('live_audio').src = data.audio;
+        });
+    </script>
+</body>
+</html>
