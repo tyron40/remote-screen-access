@@ -25,7 +25,7 @@ git clone https://github.com/tyron40/remote-screen-access.git
 cd remote-screen-access
 ```
 2. Create and activate a virtual environment:
-```sh
+```sh 
 python -m venv venv
 venv\Scripts\activate  # On Windows
 # source venv/bin/activate  # On macOS/Linux
